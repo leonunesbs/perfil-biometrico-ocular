@@ -115,7 +115,35 @@ runtime = (
     "try{new MutationObserver(s).observe(document,{childList:true});}catch(e){}})();</script>"
 )
 
+# ── Correção de DADOS (não-design) ──────────────────────────────────────────
+# PARAMS/ASTIG no bundle são DADOS estatísticos, não elementos visuais. O Claude
+# Design às vezes traz valores defasados; aqui forçamos os valores CERTIFICADOS do
+# CSV-fonte (perfis do paper: descritiva=coorte senil; ref=núcleo normativo), de modo
+# que toda reexportação saia correta. Fonte canônica: site/gerar_conteudo_lp.py
+# (repo de dados). Atualize estes literais se o CSV mudar.
+PARFIX = {  # campos estatísticos entre 'step:' e ', axisLo:' (preserva name/unit/dec/step/axis)
+ "AL":  "n:452, mean:23.32, sd:1.37, median:23.14, iqr0:22.6, iqr1:23.85, p5:21.52, p95:25.52, min:19.91, max:33.27, refLo:21.39, refHi:26.42",
+ "Km":  "n:463, mean:43.99, sd:1.55, median:44.0, iqr0:42.9, iqr1:45.04, p5:41.41, p95:46.69, min:39.87, max:48.13, refLo:40.63, refHi:46.15",
+ "ACD": "n:483, mean:3.11, sd:0.47, median:3.09, iqr0:2.8, iqr1:3.41, p5:2.39, p95:3.82, min:1.31, max:5.61, refLo:2.3, refHi:3.95",
+ "LT":  "n:473, mean:4.45, sd:0.42, median:4.46, iqr0:4.18, iqr1:4.72, p5:3.79, p95:5.15, min:2.79, max:5.71, refLo:3.64, refHi:5.3",
+ "WTW": "n:482, mean:11.95, sd:0.44, median:12.0, iqr0:11.62, iqr1:12.3, p5:11.2, p95:12.6, min:10.6, max:13.2, refLo:11.17, refHi:12.8",
+ "CCT": "n:486, mean:526, sd:39, median:523, iqr0:499, iqr1:549, p5:468, p95:597, min:396, max:672, refLo:461, refHi:579",
+}
+ASTIG_FIX = ("ASTIG = [{lab:'≥ 0,75 D', pct:63.7, n:293}, {lab:'≥ 1,00 D', pct:49.6, n:228}, "
+             "{lab:'≥ 1,50 D', pct:28.9, n:133}, {lab:'≥ 2,00 D', pct:18.5, n:85}, "
+             "{lab:'≥ 3,00 D', pct:7.6, n:35}]")  # n = 460 olhos (coorte senil)
+
+def fixdata(html):
+    for k, stat in PARFIX.items():
+        pat = re.compile(r"(\{key:'" + k + r"'[^{}]*?step:[^,]+, )n:[^{}]*?(, axisLo:)")
+        html, c = pat.subn(r"\g<1>" + stat + r"\g<2>", html, count=1)
+        print(f"  fixdata PARAMS {k}: {'ok' if c else 'NÃO ENCONTRADO'}")
+    html, c = re.subn(r"ASTIG\s*=\s*\[[^\]]*\]", ASTIG_FIX, html, count=1)
+    print(f"  fixdata ASTIG: {'ok' if c else 'NÃO ENCONTRADO'}")
+    return html
+
 h = open(SRC, encoding="utf-8").read()
+h = fixdata(h)
 h = re.sub(r'<meta charset="utf-8">\s*<title>Bundled Page</title>', head, h, count=1)
 h = re.sub(r'<html\b[^>]*>', '<html lang="pt-BR">', h, count=1)
 h = h.replace("</body>", runtime + "</body>", 1) if "</body>" in h else h + runtime
