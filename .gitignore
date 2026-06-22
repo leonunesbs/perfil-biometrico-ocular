@@ -1,0 +1,4 @@
+# Inputs de build (export do Claude Design) — não versionar; o artefato é o index.html
+_export_clean.html
+export.html
+*.dc.html

@@ -16,7 +16,9 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else "export.html"
 GATE = os.environ.get("GATE", "0") == "1"
 URL = "https://leonunesbs.github.io/perfil-biometrico-ocular/"
 IMG = URL + "og-image.png"
-PDF = "artigo-completo.pdf"
+# Link do artigo: agora no Google Drive (o PDF saiu do repo de deploy). PLACEHOLDER abaixo —
+# trocar pelo link real depois: o token __ARTIGO_PLACEHOLDER__ aparece aqui e no FOOTER.
+PDF = "https://drive.google.com/__ARTIGO_PLACEHOLDER__"
 TITLE = "Perfil biométrico ocular e intervalos de referência — HGF"
 DESC = ("Estudo transversal do perfil biométrico ocular — comprimento axial, ceratometria, "
         "câmara anterior, cristalino e córnea — e intervalos de referência em adultos ≥ 40 anos, "
@@ -74,7 +76,7 @@ FOOTER = ('<footer id="__ft" style="background:#0e1b2c;color:#cdd9e5;'
 '<div style="color:#8aa0b4;font-size:13px;line-height:1.7">Hospital Geral de Fortaleza (HGF) — vinculado à Escola de Saúde Pública do Ceará (ESP-CE/SESA).<br>Leonardo Nunes Bezerra Souza · orient.: Dr. Dácio Carvalho Costa · TCR em Oftalmologia, 2026.</div></div>'
 '<div><div style="color:#6f8298;text-transform:uppercase;font-size:11px;letter-spacing:.12em;margin-bottom:10px">Estudo</div>'
 '<nav style="display:flex;flex-direction:column;gap:7px">'
-'<a href="artigo-completo.pdf" download>Artigo completo (PDF)</a>'
+'<a href="https://drive.google.com/__ARTIGO_PLACEHOLDER__" target="_blank" rel="noopener">Artigo completo (PDF)</a>'
 '<a href="etica.html">Comitê de ética</a>'
 '<a href="privacidade.html">Política de privacidade</a>'
 '<a href="termos.html">Termos de uso</a></nav></div>'
@@ -88,16 +90,14 @@ FOOTER = ('<footer id="__ft" style="background:#0e1b2c;color:#cdd9e5;'
 '<span>© 2026 · Conteúdo acadêmico/educacional — não constitui aconselhamento médico.</span>'
 '<span>Resultados preliminares</span></div></div></footer>')
 
+# overflow-x:CLIP (não 'hidden'!) evita o transbordo horizontal SEM criar um scroll-container —
+# preserva position:sticky (o eye-stage de scroll E o header sticky). 'overflow:hidden' criava um
+# scroll-container e quebrava o sticky → era a causa da "animação de scroll inoperante" e do header
+# "cortado". A responsividade de corpo/header já vem completa do próprio design (@media .lp-* em
+# 520/820/1040: esconde navlinks/subtítulo, escala tipografia, empilha grids). Os antigos seletores
+# data-dc-tpl deste build NÃO existem mais no export (eram regras nulas) — removidos.
 CSS = ("#__ft a{color:#4da3ff;text-decoration:none}#__ft a:hover{text-decoration:underline}"
-       "html,body{overflow-x:hidden}"
-       "@media (max-width:640px){"
-       '[data-dc-tpl="9"]{padding:10px 16px !important}'
-       '[data-dc-tpl="10"],[data-dc-tpl="11"]{font-size:12px !important;letter-spacing:.05em !important}'
-       'nav[data-dc-tpl="13"]{gap:10px !important}'
-       '.lp-theme{font-size:11px !important;padding:5px 9px !important}'
-       "section{padding-left:18px !important;padding-right:18px !important}"
-       '[data-dc-tpl="92"]{padding-left:18px !important;padding-right:18px !important}'
-       "}")
+       "html,body{overflow-x:clip}")
 
 gate_js = (
     "function gate(){if(document.getElementById('__cc'))return;var o=document.createElement('div');o.id='__cc';"
@@ -119,8 +119,8 @@ runtime = (
     "(document.head||document.documentElement).appendChild(s);}if(s.textContent!==CSS)s.textContent=CSS;}"
     "function foot(){if(document.getElementById('__ft'))return;var t=document.createElement('div');t.innerHTML=FT;"
     "(document.body||document.documentElement).appendChild(t.firstElementChild);}"
-    "function ctas(){var as=document.querySelectorAll('a[download]');for(var i=0;i<as.length;i++){var a=as[i];"
-    "if((a.getAttribute('href')||'').slice(-4)!=='.pdf'){a.setAttribute('href',P);a.setAttribute('download','artigo-completo.pdf');}}}"
+    "function ctas(){var as=document.querySelectorAll('a[href*=\"artigo-completo.pdf\"],a[download]');for(var i=0;i<as.length;i++){var a=as[i];"
+    "a.setAttribute('href',P);a.setAttribute('target','_blank');a.setAttribute('rel','noopener');a.removeAttribute('download');}}"
     + gate_js +
     "function s(){if(document.title!==T)document.title=T;ic('icon','favicon.ico');ic('apple-touch-icon','apple-touch-icon.png');css();ctas();foot();gate();}"
     "s();var n=0,iv=setInterval(function(){s();if(++n>80)clearInterval(iv);},200);"
