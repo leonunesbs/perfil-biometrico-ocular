@@ -66,29 +66,10 @@ head = f'''<meta charset="utf-8">
   <meta name="twitter:image" content="{IMG}">
   <script type="application/ld+json">{ld}</script>'''
 
-FOOTER = ('<footer id="__ft" style="background:#0e1b2c;color:#cdd9e5;'
-"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;"
-'padding:44px 22px;font-size:14px;line-height:1.6;position:relative;z-index:5">'
-'<div style="max-width:920px;margin:0 auto">'
-'<div style="display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between">'
-'<div style="max-width:440px">'
-'<div style="color:#fff;font-weight:700;font-size:15px;margin-bottom:8px">Perfil biométrico ocular e intervalos de referência</div>'
-'<div style="color:#8aa0b4;font-size:13px;line-height:1.7">Hospital Geral de Fortaleza (HGF) — vinculado à Escola de Saúde Pública do Ceará (ESP-CE/SESA).<br>Leonardo Nunes Bezerra Souza · orient.: Dr. Dácio Carvalho Costa · TCR em Oftalmologia, 2026.</div></div>'
-'<div><div style="color:#6f8298;text-transform:uppercase;font-size:11px;letter-spacing:.12em;margin-bottom:10px">Estudo</div>'
-'<nav style="display:flex;flex-direction:column;gap:7px">'
-'<a href="https://drive.google.com/__ARTIGO_PLACEHOLDER__" target="_blank" rel="noopener">Artigo completo (PDF)</a>'
-'<a href="etica.html">Comitê de ética</a>'
-'<a href="privacidade.html">Política de privacidade</a>'
-'<a href="termos.html">Termos de uso</a></nav></div>'
-'<div><div style="color:#6f8298;text-transform:uppercase;font-size:11px;letter-spacing:.12em;margin-bottom:10px">Autor</div>'
-'<nav style="display:flex;flex-direction:column;gap:7px">'
-'<a href="https://github.com/leonunesbs" target="_blank" rel="noopener">GitHub</a>'
-'<a href="mailto:leonunesbs@gmail.com">E-mail</a></nav></div>'
-'</div>'
-'<div style="border-top:1px solid #21344a;margin-top:26px;padding-top:16px;color:#6f8298;font-size:12px;'
-'display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between">'
-'<span>© 2026 · Conteúdo acadêmico/educacional — não constitui aconselhamento médico.</span>'
-'<span>Resultados preliminares</span></div></div></footer>')
+# Footer: usa-se APENAS o footer do próprio design (Claude Design). A injeção do
+# antigo #__ft foi removida — ela duplicava o footer do design e contribuía ~0,3 ao
+# CLS (re-inserção pós-load). Os links legais (ética/privacidade/termos) agora ficam
+# no footer do design. (Recuperável no git, caso o design perca o footer.)
 
 # overflow-x:CLIP (não 'hidden'!) evita o transbordo horizontal SEM criar um scroll-container —
 # preserva position:sticky (o eye-stage de scroll E o header sticky). 'overflow:hidden' criava um
@@ -96,8 +77,7 @@ FOOTER = ('<footer id="__ft" style="background:#0e1b2c;color:#cdd9e5;'
 # "cortado". A responsividade de corpo/header já vem completa do próprio design (@media .lp-* em
 # 520/820/1040: esconde navlinks/subtítulo, escala tipografia, empilha grids). Os antigos seletores
 # data-dc-tpl deste build NÃO existem mais no export (eram regras nulas) — removidos.
-CSS = ("#__ft a{color:#4da3ff;text-decoration:none}#__ft a:hover{text-decoration:underline}"
-       "html,body{overflow-x:clip}")
+CSS = "html,body{overflow-x:clip}"
 
 gate_js = (
     "function gate(){if(document.getElementById('__cc'))return;var o=document.createElement('div');o.id='__cc';"
@@ -112,17 +92,24 @@ gate_js = (
 
 runtime = (
     "<script>(function(){var T=" + json.dumps(TITLE, ensure_ascii=False) + ",P=" + json.dumps(PDF)
-    + ",FT=" + json.dumps(FOOTER, ensure_ascii=False) + ",CSS=" + json.dumps(CSS, ensure_ascii=False) + ";"
+    + ",CSS=" + json.dumps(CSS, ensure_ascii=False) + ";"
     "function ic(r,h){var l=document.querySelector('link[rel=\"'+r+'\"]');"
     "if(!l){l=document.createElement('link');l.rel=r;(document.head||document.documentElement).appendChild(l);}l.href=h;}"
     "function css(){var s=document.getElementById('__rs');if(!s){s=document.createElement('style');s.id='__rs';"
     "(document.head||document.documentElement).appendChild(s);}if(s.textContent!==CSS)s.textContent=CSS;}"
-    "function foot(){if(document.getElementById('__ft'))return;var t=document.createElement('div');t.innerHTML=FT;"
-    "(document.body||document.documentElement).appendChild(t.firstElementChild);}"
     "function ctas(){var as=document.querySelectorAll('a[href*=\"artigo-completo.pdf\"],a[download]');for(var i=0;i<as.length;i++){var a=as[i];"
     "a.setAttribute('href',P);a.setAttribute('target','_blank');a.setAttribute('rel','noopener');a.removeAttribute('download');}}"
+    # ext(): toda <a> externa em nova aba leva rel=noopener noreferrer. Sem isso, o Safari/WebKit
+    # BLOQUEIA a navegação p/ sites com COOP same-origin (Instagram/Facebook/Google) com o erro
+    # 'Navigation was blocked by Cross-Origin-Opener-Policy'. Idempotente (só age se faltar noopener).
+    "function ext(){var as=document.querySelectorAll('a[href^=\"http\"]');for(var i=0;i<as.length;i++){var a=as[i],h=a.getAttribute('href')||'';"
+    "if(!/^https?:\\/\\//.test(h)||h.indexOf('//'+location.host)>-1)continue;"
+    "var r=(a.getAttribute('rel')||'').split(/\\s+/).filter(Boolean),need=0;"
+    "if(r.indexOf('noopener')<0){r.push('noopener');need=1;}if(r.indexOf('noreferrer')<0){r.push('noreferrer');need=1;}"
+    "if(need)a.setAttribute('rel',r.join(' '));}}"
     + gate_js +
-    "function s(){if(document.title!==T)document.title=T;ic('icon','favicon.ico');ic('apple-touch-icon','apple-touch-icon.png');css();ctas();foot();gate();}"
+    "function s(){if(document.title!==T)document.title=T;if(document.documentElement.lang!=='pt-BR')document.documentElement.lang='pt-BR';"
+    "ic('icon','favicon.ico');ic('apple-touch-icon','apple-touch-icon.png');css();ctas();ext();gate();}"
     "s();var n=0,iv=setInterval(function(){s();if(++n>80)clearInterval(iv);},200);"
     "document.addEventListener('DOMContentLoaded',s);window.addEventListener('load',s);"
     "try{new MutationObserver(s).observe(document,{childList:true});}catch(e){}})();</script>"
@@ -134,4 +121,4 @@ h = re.sub(r'<html\b[^>]*>', '<html lang="pt-BR">', h, count=1)
 h = h.replace("</body>", runtime + "</body>", 1) if "</body>" in h else h + runtime
 open("index.html", "w", encoding="utf-8").write(h)
 print(f"index.html gerado de {SRC!r} | GATE={'ON' if GATE else 'OFF'} | "
-      f"SEO+favicon+enforcer+CTA+CSS-responsivo+footer aplicados (header HGF mantido)")
+      f"SEO+favicon+enforcer+CTA+CSS+lang+hardening-de-links externos (footer = só o do design)")
