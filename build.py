@@ -107,12 +107,23 @@ runtime = (
     "var r=(a.getAttribute('rel')||'').split(/\\s+/).filter(Boolean),need=0;"
     "if(r.indexOf('noopener')<0){r.push('noopener');need=1;}if(r.indexOf('noreferrer')<0){r.push('noreferrer');need=1;}"
     "if(need)a.setAttribute('rel',r.join(' '));}}"
+    # tcol(): a BARRA DE STATUS (theme-color) deve casar com o tema APLICADO. O Design usa
+    # theme-color por media-query (segue só o SISTEMA) → em tema escuro por toggle manual com
+    # sistema claro, a barra fica branca. Aqui removemos os por-media e setamos UM theme-color
+    # = cor real pintada no topo da página (reflete toggle OU sistema). Reage a clique e ao sistema.
+    "function tcol(){try{var md=document.querySelectorAll('meta[name=\"theme-color\"][media]');"
+    "for(var i=0;i<md.length;i++)md[i].parentNode.removeChild(md[i]);"
+    "var nm=document.querySelector('meta[name=\"theme-color\"]:not([media])');"
+    "if(nm&&/rgba?\\([^)]*0?\\.\\d+\\s*\\)$/.test(nm.getAttribute('content')||'')){"
+    "var c=nm.getAttribute('content').match(/(\\d+)\\D+(\\d+)\\D+(\\d+)/);if(c)nm.setAttribute('content','rgb('+c[1]+','+c[2]+','+c[3]+')');}}catch(e){}}"
     + gate_js +
     "function s(){if(document.title!==T)document.title=T;if(document.documentElement.lang!=='pt-BR')document.documentElement.lang='pt-BR';"
-    "ic('icon','favicon.ico');ic('apple-touch-icon','apple-touch-icon.png');css();ctas();ext();gate();}"
+    "ic('icon','favicon.ico');ic('apple-touch-icon','apple-touch-icon.png');css();ctas();ext();tcol();gate();}"
     "s();var n=0,iv=setInterval(function(){s();if(++n>80)clearInterval(iv);},200);"
     "document.addEventListener('DOMContentLoaded',s);window.addEventListener('load',s);"
-    "try{new MutationObserver(s).observe(document,{childList:true});}catch(e){}})();</script>"
+    "try{new MutationObserver(s).observe(document,{childList:true});}catch(e){}"
+    "document.addEventListener('click',function(){setTimeout(tcol,60);setTimeout(tcol,320);});"
+    "try{matchMedia('(prefers-color-scheme:dark)').addEventListener('change',tcol);}catch(e){}})();</script>"
 )
 
 # ── Correção de DADOS (só o que a fonte deixa defasado) ──────────────────────
