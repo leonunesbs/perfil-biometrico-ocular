@@ -145,8 +145,54 @@ def fixdata(html):
     print(f"  fixdata período: {c}× {PERIODO[0]!r} → {PERIODO[1]!r}")
     return html
 
+# ── Correção do HEAD estático (OG/favicon que o Design exporta quebrados) ─────
+# O Design exporta no head: og:image/twitter:image com caminho RELATIVO inexistente
+# (assets/og-card.png → 404) e favicon com href = UUID do bundler (404 no site). Crawlers
+# leem o HTML ESTÁTICO (não rodam JS), então isso quebra preview de link e favicon inicial.
+# Aqui: imagem OG absoluta (og-image.png, que existe) + og:url/canonical + favicons reais.
+FAVI = ('<link rel="icon" type="image/x-icon" href="favicon.ico">'
+        '<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">'
+        '<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">'
+        '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">')
+
+def fixhead(html):
+    # o Design recente deixa o <head> ESTÁTICO sem as metas de SEO (só ficam no template
+    # escapado do bundle, injetado via JS) → crawlers não veem og/favicon. Reinjetamos um
+    # bloco SEO completo e correto no head estático. Título: o do próprio Design (mantido).
+    html = html.replace("assets/og-card.png", f"{URL}og-image.png")  # corrige refs (runtime) → arquivo real
+    mt = re.search(r"<title>([^<]*)</title>", html)
+    title = (mt.group(1).strip() if mt else TITLE).replace('"', "'")
+    img = URL + "og-image.png"
+    seo = (
+        f'<meta name="description" content="{DESC}">'
+        '<meta name="author" content="Leonardo Nunes Bezerra Souza">'
+        '<meta name="robots" content="index, follow">'
+        f'<link rel="canonical" href="{URL}">'
+        '<meta property="og:type" content="article">'
+        '<meta property="og:site_name" content="Perfil Biométrico Ocular · HGF">'
+        f'<meta property="og:title" content="{title}">'
+        f'<meta property="og:description" content="{DESC}">'
+        f'<meta property="og:url" content="{URL}">'
+        f'<meta property="og:image" content="{img}">'
+        '<meta property="og:image:type" content="image/png">'
+        '<meta property="og:image:width" content="1200">'
+        '<meta property="og:image:height" content="630">'
+        '<meta property="og:image:alt" content="Perfil biométrico ocular — intervalos de referência (HGF)">'
+        '<meta property="og:locale" content="pt_BR">'
+        '<meta name="twitter:card" content="summary_large_image">'
+        f'<meta name="twitter:title" content="{title}">'
+        f'<meta name="twitter:description" content="{DESC}">'
+        f'<meta name="twitter:image" content="{img}">'
+        + FAVI
+        + f'<script type="application/ld+json">{ld}</script>'
+    )
+    html = html.replace("</head>", seo + "</head>", 1)
+    print("  fixhead: bloco SEO completo reinjetado no head estático (og/twitter/canonical/favicon/ld+json)")
+    return html
+
 h = open(SRC, encoding="utf-8").read()
 h = fixdata(h)
+h = fixhead(h)
 h = re.sub(r'<meta charset="utf-8">\s*<title>Bundled Page</title>', head, h, count=1)
 h = re.sub(r'<html\b[^>]*>', '<html lang="pt-BR">', h, count=1)
 h = h.replace("</body>", runtime + "</body>", 1) if "</body>" in h else h + runtime
