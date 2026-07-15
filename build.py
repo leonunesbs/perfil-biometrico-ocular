@@ -201,8 +201,20 @@ def fixhead(html):
     print("  fixhead: bloco SEO completo reinjetado no head estático (og/twitter/canonical/favicon/ld+json)")
     return html
 
+# ── Correção de ALINHAMENTO (grid dos limiares biométricos) ──────────────────
+# No grid "1fr auto" dos limiares (seção câmara rasa), o rótulo (19px) e o valor
+# (22px) têm alturas diferentes; com align-items:center cada célula centraliza e
+# seu border-bottom fica em Y distinto → a linha divisória mostra um degrau. stretch
+# iguala as alturas das células e alinha as bordas. Padrão único no documento.
+def fixalign(html):
+    html, c = re.subn(re.escape("grid-template-columns:1fr auto;align-items:center"),
+                      "grid-template-columns:1fr auto;align-items:stretch", html)
+    print(f"  fixalign: {c}x grid de limiares -> align-items:stretch")
+    return html
+
 h = open(SRC, encoding="utf-8").read()
 h = fixdata(h)
+h = fixalign(h)
 h = fixhead(h)
 h = re.sub(r'<meta charset="utf-8">\s*<title>Bundled Page</title>', head, h, count=1)
 h = re.sub(r'<html\b[^>]*>', '<html lang="pt-BR">', h, count=1)
