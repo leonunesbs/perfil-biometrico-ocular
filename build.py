@@ -84,7 +84,7 @@ gate_js = (
     "o.setAttribute('style','position:fixed;inset:0;z-index:2147483647;background:#0e1b2c;color:#fff;"
     "display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;"
     "font-family:-apple-system,BlinkMacSystemFont,\\'Segoe UI\\',Helvetica,Arial,sans-serif');"
-    "o.innerHTML='<div style=\"max-width:540px\"><div style=\"font-size:12px;letter-spacing:.2em;color:#4da3ff;"
+    "o.innerHTML='<div style=\"max-width:540px\"><img src=\"apple-touch-icon.png\" width=\"104\" height=\"104\" style=\"border-radius:22px;margin-bottom:26px;box-shadow:0 8px 30px rgba(0,0,0,.45)\" alt=\"\"><div style=\"font-size:12px;letter-spacing:.2em;color:#4da3ff;"
     "font-weight:700;margin-bottom:20px\">HGF · OFTALMOLOGIA · TCR 2026</div><div style=\"font-size:32px;font-weight:700;"
     "line-height:1.15;margin-bottom:16px\">Perfil biométrico ocular</div><div style=\"font-size:17px;color:#cdd9e5;"
     "line-height:1.55\">Página em construção.<br>Estamos finalizando o conteúdo — volte em breve.</div></div>';"
@@ -164,7 +164,10 @@ def fixdata(html):
 FAVI = ('<link rel="icon" type="image/x-icon" href="favicon.ico">'
         '<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">'
         '<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">'
-        '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">')
+        '<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">'
+        '<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">'
+        '<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">'
+        '<link rel="manifest" href="manifest.webmanifest">')
 
 def fixhead(html):
     # o Design recente deixa o <head> ESTÁTICO sem as metas de SEO (só ficam no template
@@ -213,9 +216,18 @@ def fixalign(html):
     return html
 
 h = open(SRC, encoding="utf-8").read()
+def fixicons(html):
+    # Remove links de favicon do design cujo href é um UUID do bundler (404 no site).
+    # O href correto já é reinjetado por fixhead/FAVI. Cobre aspas normais e escapadas.
+    pat = r'<link\b[^>]*?href=(\\?")[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\1[^>]*?>'
+    html, c = re.subn(pat, '', html)
+    print(f"  fixicons: {c} favicon(s) UUID quebrado(s) removido(s)")
+    return html
+
 h = fixdata(h)
 h = fixalign(h)
 h = fixhead(h)
+h = fixicons(h)
 h = re.sub(r'<meta charset="utf-8">\s*<title>Bundled Page</title>', head, h, count=1)
 h = re.sub(r'<html\b[^>]*>', '<html lang="pt-BR">', h, count=1)
 h = h.replace("</body>", runtime + "</body>", 1) if "</body>" in h else h + runtime
